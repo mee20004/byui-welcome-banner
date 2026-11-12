@@ -4,15 +4,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Welcome to BYU-Idaho</title>
-<link rel="stylesheet" href="style.css?v=5" />
+<link rel="stylesheet" href="style.css?v=6" />
 </head>
 <body>
-  <div class="stage" id="stage" role="img" aria-label="Welcome to BYU-Idaho">
-    <!-- the whole banner is one piece of cloth, sliced into strips by script.js -->
-    <div class="flag" id="flag"></div>
-    <div class="glow" id="glow" aria-hidden="true"></div>
-    <div class="sparks" id="sparks" aria-hidden="true"></div>
+  <div class="stage" id="stage">
+    <canvas id="sea" aria-label="A longship riding the waves" role="img"></canvas>
+    <div class="words">
+      <h1 class="headline">Welcome to BYU&ndash;Idaho</h1>
+      <p class="sub" id="sub">Hover for wind &middot; tap to make waves</p>
+    </div>
   </div>
-  <script src="script.js?v=5"></script>
+  <script src="script.js?v=6"></script>
 </body>
 </html>

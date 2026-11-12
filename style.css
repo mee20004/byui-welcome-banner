@@ -1,9 +1,6 @@
 :root {
-  --navy: #002e5d;
-  --navy-deep: #001b38;
-  --blue: #0062b8;
-  --sky: #4aa8ff;
-  --edge: #ffffff;          /* white surround the cloth waves against */
+  --ink: #ffffff;
+  --sky-top: #04203f;
 }
 
 * { box-sizing: border-box; }
@@ -11,8 +8,8 @@
 html, body {
   margin: 0;
   height: 100%;
-  overflow: hidden;                   /* no scrolling, ever */
-  background: var(--edge);
+  overflow: hidden;                /* no scrolling, ever */
+  background: var(--sky-top);
   font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
 }
 
@@ -23,124 +20,50 @@ html, body {
   overflow: hidden;
   cursor: pointer;
   user-select: none;
-  background: var(--edge);            /* white edges all around the flag */
 }
 
-/* ---------- the flag ---------- */
-/* It is the whole banner: one picture cut into vertical strips, each
-   strip a beat behind the one before it, which reads as waving cloth. */
-.flag {
+#sea {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* the words sit above the sea, crisp HTML text rather than canvas text */
+.words {
   position: absolute;
+  top: 7%;
   left: 0;
   right: 0;
-  top: 50%;
-  height: 74%;                        /* leaves white above and below */
-  transform: translateY(-50%);
-  display: flex;
-}
-
-.flag .strip {
-  position: relative;
-  height: 100%;
-  flex: 1 1 0;
-  margin-right: -0.5px;               /* overlap so no hairline seams show */
-  overflow: hidden;
-  animation: cloth 2.6s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -70ms);
-  will-change: transform;
-}
-
-/* the swing grows toward the free end, like cloth on a pole */
-@keyframes cloth {
-  0%, 100% { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);     filter: brightness(1); }
-  25%      { transform: translateY(calc(var(--amp) * -15%)) scaleY(1.05);  filter: brightness(1.09); }
-  50%      { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);     filter: brightness(1); }
-  75%      { transform: translateY(calc(var(--amp) * 15%))  scaleY(0.95);  filter: brightness(0.91); }
-}
-
-/* every strip holds a full copy of the banner face, slid sideways,
-   so the slices line back up into one picture */
-.flag .face {
-  position: absolute;
-  top: 0;
-  height: 100%;
-  width: calc(var(--n) * 100%);
-  left: calc(var(--i) * -100%);
-  display: grid;
-  place-items: center;
   text-align: center;
+  pointer-events: none;
   padding: 0 4%;
-  border-top: 3px solid var(--edge);
-  border-bottom: 3px solid var(--edge);
-  background: linear-gradient(115deg, var(--navy-deep), var(--navy) 35%, var(--blue) 65%, var(--navy) 100%);
-  background-size: 300% 300%;
-  animation: flow 14s ease-in-out infinite;
 }
 
-@keyframes flow {
-  0%, 100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
-}
-
-.flag .headline {
+.headline {
   margin: 0;
-  font-size: clamp(1.1rem, 6.4vw, 3rem);
+  font-size: clamp(0.95rem, 5.4vw, 2.4rem);
   line-height: 1.1;
   font-weight: 800;
   letter-spacing: 0.01em;
-  color: #fff;
+  color: var(--ink);
   white-space: nowrap;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 2px 10px rgba(0, 20, 45, 0.6);
 }
 
-.flag .sub {
-  margin: 0.5em 0 0;
-  font-size: clamp(0.5rem, 2vw, 0.85rem);
+.sub {
+  margin: 0.45em 0 0;
+  font-size: clamp(0.5rem, 1.9vw, 0.8rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.78);
   white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0, 20, 45, 0.7);
+  transition: color 0.3s ease;
 }
+.stage:hover .sub { color: #fff; }
 
-/* hovering stirs the cloth up; clicking sends a gust through it */
-.stage:hover .flag .strip { animation-duration: 1.4s; }
-.stage.cheer .flag .strip { animation-duration: 0.6s; }
-.stage.cheer .flag .headline { color: var(--sky); transition: color 0.2s ease; }
-
-/* soft light that follows the pointer, over the cloth */
-.glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 3;
-  background: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%),
-              rgba(255, 255, 255, 0.20), transparent 70%);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-.stage:hover .glow { opacity: 1; }
-
-/* ---------- click burst ---------- */
-.sparks { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
-.spark {
-  position: absolute;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--sky);
-  animation: pop 750ms ease-out forwards;
-}
-@keyframes pop {
-  from { transform: translate(0, 0) scale(1); opacity: 1; }
-  to   { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
-}
-
-/* very short containers: the flag takes more of the room, sub-line goes */
+/* very short containers: the sea needs the room more than the sub-line does */
 @media (max-height: 120px) {
-  .flag { height: 86%; }
-  .flag .sub { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .flag .strip, .flag .face, .spark { animation: none !important; }
+  .sub { display: none; }
+  .words { top: 4%; }
 }
