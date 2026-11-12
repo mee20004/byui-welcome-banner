@@ -21,9 +21,9 @@
 
   /* ---- sim constants ---- */
   var SPACING = 4;        /* px between columns */
-  var STIFF = 0.022;      /* pull back toward rest level */
-  var DAMP = 0.994;       /* energy bleed, so it settles */
-  var SPREAD = 0.19;      /* how fast a wave travels sideways */
+  var STIFF = 0.015;      /* pull back toward rest level */
+  var DAMP = 0.997;       /* energy bleed, so it settles */
+  var SPREAD = 0.23;      /* how fast a wave travels sideways */
   var PASSES = 2;         /* spread iterations per step */
   var STEP = 1 / 60;
 
@@ -55,7 +55,7 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     N = Math.max(24, Math.ceil(W / SPACING) + 1);
-    rest = H * 0.62;
+    rest = H * 0.58;
     h = new Array(N);
     v = new Array(N);
     ld = new Array(N);
@@ -118,10 +118,12 @@
 
     /* wind: a long swell fed in from the left, plus scattered chop */
     var w = wind + gust;
-    v[0] += Math.sin(t * 1.1) * 0.22 * w;
-    v[1] += Math.sin(t * 1.1) * 0.16 * w;
-    if (Math.random() < 0.5 * w) {
-      disturb(Math.random() * W, (Math.random() - 0.45) * 1.5 * w, 10);
+    v[0] += Math.sin(t * 0.9) * 1.0 * w;              /* swell rolling in */
+    v[1] += Math.sin(t * 0.9) * 0.7 * w;
+    v[N - 1] += Math.sin(t * 1.43 + 1.2) * 0.6 * w;   /* and a cross swell */
+    v[N - 2] += Math.sin(t * 1.43 + 1.2) * 0.4 * w;
+    if (Math.random() < 0.9 * w) {                    /* wind chop */
+      disturb(Math.random() * W, (Math.random() - 0.5) * 5 * w, 12);
     }
 
     /* ---- the ship floats on the same surface ---- */
@@ -317,33 +319,33 @@
     var sky = ctx.createLinearGradient(0, 0, 0, rest);
     sky.addColorStop(0, '#04203f');
     sky.addColorStop(0.65, '#0b3b6b');
-    sky.addColorStop(1, '#2176b0');
+    sky.addColorStop(1, '#2f8ac4');
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
     /* two parallax copies of the same surface, then the surface itself */
     waterShape(-H * 0.055, 0.45);
-    ctx.fillStyle = '#17589180';
+    ctx.fillStyle = '#1b5f9bcc';
     ctx.fill();
     crestLine(-H * 0.055, 0.45, 0.16);
 
     waterShape(-H * 0.022, 0.72);
-    ctx.fillStyle = '#0e3f70';
+    ctx.fillStyle = '#0b3157';
     ctx.fill();
     crestLine(-H * 0.022, 0.72, 0.22);
 
     drawShip();
 
     waterShape(0, 1);
-    ctx.fillStyle = '#092b4f';
+    ctx.fillStyle = '#05223c';
     ctx.fill();
-    crestLine(0, 1, 0.34);
+    crestLine(0, 1, 0.45);
 
     /* foam where the water is moving fastest */
     for (var i = 0; i < N; i++) {
       var speed = Math.abs(v[i]);
-      if (speed > 0.55) {
-        ctx.globalAlpha = Math.min((speed - 0.55) * 0.6, 0.7);
+      if (speed > 0.75) {
+        ctx.globalAlpha = Math.min((speed - 0.75) * 0.5, 0.75);
         ctx.fillStyle = '#eaf4ff';
         ctx.beginPath();
         ctx.arc(i * SPACING, h[i], 1.6, 0, Math.PI * 2);
