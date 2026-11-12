@@ -22,7 +22,7 @@
   /* ---- sim constants ---- */
   var SPACING = 4;        /* px between columns */
   var STIFF = 0.015;      /* pull back toward rest level */
-  var DAMP = 0.997;       /* energy bleed, so it settles */
+  var DAMP = 0.995;       /* energy bleed, so it settles */
   var SPREAD = 0.23;      /* how fast a wave travels sideways */
   var PASSES = 2;         /* spread iterations per step */
   var STEP = 1 / 60;
@@ -118,12 +118,21 @@
 
     /* wind: a long swell fed in from the left, plus scattered chop */
     var w = wind + gust;
-    v[0] += Math.sin(t * 0.9) * 1.0 * w;              /* swell rolling in */
-    v[1] += Math.sin(t * 0.9) * 0.7 * w;
-    v[N - 1] += Math.sin(t * 1.43 + 1.2) * 0.6 * w;   /* and a cross swell */
-    v[N - 2] += Math.sin(t * 1.43 + 1.2) * 0.4 * w;
-    if (Math.random() < 0.9 * w) {                    /* wind chop */
-      disturb(Math.random() * W, (Math.random() - 0.5) * 5 * w, 12);
+    v[0] += Math.sin(t * 0.9) * 0.40 * w;             /* swell rolling in */
+    v[1] += Math.sin(t * 0.9) * 0.28 * w;
+    v[N - 1] += Math.sin(t * 1.43 + 1.2) * 0.26 * w;  /* and a cross swell */
+    v[N - 2] += Math.sin(t * 1.43 + 1.2) * 0.18 * w;
+    if (Math.random() < 0.6 * w) {                    /* wind chop */
+      disturb(Math.random() * W, (Math.random() - 0.5) * 2.6 * w, 12);
+    }
+
+    /* keep the sea in its bed: cap how far a column can stray from rest
+       so the swell can never swallow the frame or drain out of it */
+    var cap = H * 0.13;
+    for (i = 0; i < N; i++) {
+      var off = h[i] - rest;
+      if (off > cap) { h[i] = rest + cap; v[i] *= -0.35; }
+      else if (off < -cap) { h[i] = rest - cap; v[i] *= -0.35; }
     }
 
     /* ---- the ship floats on the same surface ---- */
@@ -344,11 +353,11 @@
     /* foam where the water is moving fastest */
     for (var i = 0; i < N; i++) {
       var speed = Math.abs(v[i]);
-      if (speed > 0.75) {
-        ctx.globalAlpha = Math.min((speed - 0.75) * 0.5, 0.75);
+      if (speed > 1.15 && i % 3 === 0) {
+        ctx.globalAlpha = Math.min((speed - 1.15) * 0.35, 0.6);
         ctx.fillStyle = '#eaf4ff';
         ctx.beginPath();
-        ctx.arc(i * SPACING, h[i], 1.6, 0, Math.PI * 2);
+        ctx.arc(i * SPACING, h[i] - 1, 1.3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
