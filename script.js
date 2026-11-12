@@ -19,12 +19,11 @@
     headline.innerHTML = '';
     text.split('').forEach(function (ch, i) {
       var s = document.createElement('span');
-      if (ch === ' ') {
-        s.className = 'space';
-        s.innerHTML = '&nbsp;';
-      } else {
-        s.textContent = ch;
-      }
+      s.className = 'ltr' + (ch === ' ' ? ' space' : '');
+      var inner = document.createElement('b');
+      inner.innerHTML = ch === ' ' ? '&nbsp;' : '';
+      if (ch !== ' ') { inner.textContent = ch; }
+      s.appendChild(inner);
       s.style.setProperty('--i', i);
       headline.appendChild(s);
     });

@@ -62,16 +62,34 @@ html, body {
   text-wrap: balance;
 }
 
-/* each letter is its own span so hover can play with it */
-.headline span {
+/* each letter waves on its own: outer span rides the wave,
+   inner span handles hover so the two transforms never fight */
+.headline .ltr {
   display: inline-block;
+  animation: wave 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.headline .ltr > b {
+  display: inline-block;
+  font-weight: inherit;
   transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), color 0.25s ease;
 }
-.headline span:hover {
-  transform: translateY(-0.18em) rotate(-6deg) scale(1.15);
+.headline .ltr > b:hover {
+  transform: translateY(-0.22em) rotate(-8deg) scale(1.22);
   color: var(--sky);
 }
 .headline .space { width: 0.32em; }
+
+/* the resting wave */
+@keyframes wave {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25%      { transform: translateY(-0.16em) rotate(-2.5deg); }
+  50%      { transform: translateY(0) rotate(0deg); }
+  75%      { transform: translateY(0.12em) rotate(2.5deg); }
+}
+
+/* hovering the banner speeds the wave up and deepens it */
+.banner:hover .headline .ltr { animation-duration: 1.5s; }
 
 .sub {
   margin: 0.7em 0 0;
@@ -98,14 +116,18 @@ html, body {
   to   { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
 }
 
-.banner.cheer .headline span {
-  animation: wave 650ms ease-in-out;
-  animation-delay: calc(var(--i) * 35ms);
+/* click: one big ripple rolls through the letters, then the resting wave resumes */
+.banner.cheer .headline .ltr {
+  animation: bigwave 900ms cubic-bezier(.34,1.3,.64,1);
+  animation-delay: calc(var(--i) * 45ms);
 }
-@keyframes wave {
-  50% { transform: translateY(-0.35em) scale(1.12); color: var(--sky); }
+@keyframes bigwave {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); }
+  35%  { transform: translateY(-0.55em) rotate(-10deg) scale(1.18); color: var(--sky); }
+  65%  { transform: translateY(0.18em) rotate(6deg) scale(0.96); }
+  100% { transform: translateY(0) rotate(0deg) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .banner, .headline span, .spark { animation: none !important; }
+  .banner, .headline .ltr, .spark { animation: none !important; }
 }
