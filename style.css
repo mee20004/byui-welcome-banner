@@ -66,8 +66,8 @@ html, body {
    inner span handles hover so the two transforms never fight */
 .headline .ltr {
   display: inline-block;
-  animation: wave 2.6s ease-in-out infinite;
-  animation-delay: calc(var(--i) * 70ms);
+  animation: wave 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -110ms);
 }
 .headline .ltr > b {
   display: inline-block;
@@ -83,13 +83,13 @@ html, body {
 /* the resting wave */
 @keyframes wave {
   0%, 100% { transform: translateY(0) rotate(0deg); }
-  25%      { transform: translateY(-0.16em) rotate(-2.5deg); }
+  25%      { transform: translateY(-0.34em) rotate(-6deg); }
   50%      { transform: translateY(0) rotate(0deg); }
-  75%      { transform: translateY(0.12em) rotate(2.5deg); }
+  75%      { transform: translateY(0.26em) rotate(6deg); }
 }
 
 /* hovering the banner speeds the wave up and deepens it */
-.banner:hover .headline .ltr { animation-duration: 1.5s; }
+.banner:hover .headline .ltr { animation-duration: 1.2s; }
 
 .sub {
   margin: 0.7em 0 0;
