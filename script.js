@@ -1,3 +1,16 @@
+/* A small height-field water simulation.
+ *
+ * The surface is a row of columns, each with a height and a velocity.
+ * Every step each column is pulled back toward the rest level by a spring,
+ * then each column trades some of its height difference with its neighbours.
+ * That exchange is what makes a disturbance travel: drop a splash in one
+ * place and the wave spreads out, bounces off the sides and interferes with
+ * itself. Nothing here is a scrolling sine wave.
+ *
+ * The ship is coupled to the same surface: it floats by buoyancy, and the
+ * water under the hull is pushed by the hull's own motion, so the ship makes
+ * the waves it then rides.
+ */
 (function () {
   var stage = document.getElementById('stage');
   var canvas = document.getElementById('sea');
@@ -6,14 +19,23 @@
 
   var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  var W = 0, H = 0, dpr = 1;
-  var t = 0;                 /* seconds */
-  var wind = 1;              /* eases toward windTarget */
-  var windTarget = 1;
-  var gust = 0;              /* click kick, decays */
-  var splashes = [];
-  var rings = [];
-  var stars = [];
+  /* ---- sim constants ---- */
+  var SPACING = 4;        /* px between columns */
+  var STIFF = 0.022;      /* pull back toward rest level */
+  var DAMP = 0.994;       /* energy bleed, so it settles */
+  var SPREAD = 0.19;      /* how fast a wave travels sideways */
+  var PASSES = 2;         /* spread iterations per step */
+  var STEP = 1 / 60;
+
+  var W = 0, H = 0, dpr = 1, N = 0, rest = 0;
+  var h = [], v = [], ld = [], rd = [];
+
+  var t = 0, acc = 0;
+  var wind = 1, windTarget = 1, gust = 0;
+  var drops = [];
+
+  /* ---- the ship ---- */
+  var ship = { x: 0, y: 0, vy: 0, scale: 0.6, half: 44 };
 
   var messages = [
     'Full sail ahead!',
@@ -24,7 +46,6 @@
   ];
   var next = 0;
 
-  /* ---------- sizing ---------- */
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = stage.clientWidth;
@@ -33,76 +54,148 @@
     canvas.height = Math.max(1, Math.round(H * dpr));
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-    stars = [];
-    var n = Math.round((W * H) / 9000);
-    for (var i = 0; i < n; i++) {
-      stars.push({
-        x: Math.random() * W,
-        y: Math.random() * H * 0.45,
-        r: Math.random() * 1.1 + 0.3,
-        tw: Math.random() * Math.PI * 2
-      });
-    }
+    N = Math.max(24, Math.ceil(W / SPACING) + 1);
+    rest = H * 0.62;
+    h = new Array(N);
+    v = new Array(N);
+    ld = new Array(N);
+    rd = new Array(N);
+    for (var i = 0; i < N; i++) { h[i] = rest; v[i] = 0; ld[i] = 0; rd[i] = 0; }
+
+    ship.scale = Math.max(0.3, Math.min(H / 260, W / 470, 0.9));
+    ship.half = 44 * ship.scale;
+    ship.x = W * 0.5;
+    ship.y = rest;
   }
   if (window.ResizeObserver) { new ResizeObserver(resize).observe(stage); }
   window.addEventListener('resize', resize);
   resize();
 
-  /* ---------- the swell ---------- */
-  /* layer 0 is the far water, 2 is the near water the ship sits in */
-  function horizon() { return H * 0.54; }
-
-  function waveAt(x, layer) {
-    var amp = (2.2 + layer * 2.6) * wind;
-    var base = horizon() + layer * (H * 0.09);
-    return base
-      + Math.sin(x * 0.018 + t * (1.1 + layer * 0.35) + layer) * amp
-      + Math.sin(x * 0.041 - t * (1.7 + layer * 0.3)) * amp * 0.45
-      + Math.sin(x * 0.007 + t * 0.6) * amp * 0.7;
+  /* height of the surface at an arbitrary x, interpolated between columns */
+  function surfaceAt(x) {
+    var f = x / SPACING;
+    var i = Math.floor(f);
+    if (i < 0) { return h[0]; }
+    if (i >= N - 1) { return h[N - 1]; }
+    var a = f - i;
+    return h[i] * (1 - a) + h[i + 1] * a;
   }
 
-  function waterPath(layer) {
+  /* push the surface down (or up, with a negative amount) around x */
+  function disturb(x, amount, width) {
+    var c = Math.round(x / SPACING);
+    var w = Math.max(1, Math.round(width / SPACING));
+    for (var i = c - w; i <= c + w; i++) {
+      if (i < 0 || i >= N) { continue; }
+      var f = 1 - Math.abs(i - c) / (w + 1);
+      v[i] += amount * f * f;
+    }
+  }
+
+  /* ---- one simulation step ---- */
+  function simulate() {
+    var i;
+
+    /* springs: every column is pulled back toward the rest level */
+    for (i = 0; i < N; i++) {
+      var d = h[i] - rest;
+      v[i] -= STIFF * d;
+      v[i] *= DAMP;
+      h[i] += v[i];
+    }
+
+    /* neighbour exchange: this is what makes waves travel and reflect */
+    for (var p = 0; p < PASSES; p++) {
+      for (i = 0; i < N; i++) {
+        if (i > 0) { ld[i] = SPREAD * (h[i] - h[i - 1]); v[i - 1] += ld[i]; }
+        if (i < N - 1) { rd[i] = SPREAD * (h[i] - h[i + 1]); v[i + 1] += rd[i]; }
+      }
+      for (i = 0; i < N; i++) {
+        if (i > 0) { h[i - 1] += ld[i]; }
+        if (i < N - 1) { h[i + 1] += rd[i]; }
+      }
+    }
+
+    /* wind: a long swell fed in from the left, plus scattered chop */
+    var w = wind + gust;
+    v[0] += Math.sin(t * 1.1) * 0.22 * w;
+    v[1] += Math.sin(t * 1.1) * 0.16 * w;
+    if (Math.random() < 0.5 * w) {
+      disturb(Math.random() * W, (Math.random() - 0.45) * 1.5 * w, 10);
+    }
+
+    /* ---- the ship floats on the same surface ---- */
+    var water = surfaceAt(ship.x);
+    var draft = 7 * ship.scale;            /* how deep she sits */
+    var target = water - draft;
+    ship.vy += (target - ship.y) * 0.06;   /* buoyancy */
+    ship.vy *= 0.90;                       /* drag in the water */
+    ship.y += ship.vy;
+
+    /* and shoves the water under the hull as she moves: her own wake */
+    disturb(ship.x, ship.vy * 0.22, ship.half * 0.9);
+  }
+
+  /* ---- drawing ---- */
+  function waterShape(offsetY, squash) {
     ctx.beginPath();
     ctx.moveTo(0, H);
-    ctx.lineTo(0, waveAt(0, layer));
-    for (var x = 0; x <= W; x += 6) { ctx.lineTo(x, waveAt(x, layer)); }
+    ctx.lineTo(0, rest + (h[0] - rest) * squash + offsetY);
+    for (var i = 1; i < N; i++) {
+      ctx.lineTo(i * SPACING, rest + (h[i] - rest) * squash + offsetY);
+    }
     ctx.lineTo(W, H);
     ctx.closePath();
   }
 
-  /* ---------- the longship ---------- */
-  function drawShip(scale) {
-    ctx.save();
-    ctx.scale(scale, scale);
+  function crestLine(offsetY, squash, alpha) {
+    ctx.beginPath();
+    ctx.moveTo(0, rest + (h[0] - rest) * squash + offsetY);
+    for (var i = 1; i < N; i++) {
+      ctx.lineTo(i * SPACING, rest + (h[i] - rest) * squash + offsetY);
+    }
+    ctx.lineWidth = 1.6;
+    ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
+    ctx.stroke();
+  }
 
+  function drawShip() {
     var hullDark = '#4a2a18';
     var hullMid = '#7a4526';
+    var s = ship.scale;
 
-    /* stern and prow posts, curled like a dragon's neck */
+    /* heel with the real slope of the water under her */
+    var slope = (surfaceAt(ship.x + ship.half) - surfaceAt(ship.x - ship.half)) / (ship.half * 2);
+
+    ctx.save();
+    ctx.translate(ship.x, ship.y);
+    ctx.rotate(Math.atan(slope) * 0.95);
+    ctx.scale(s, s);
+
+    ctx.lineCap = 'round';
     ctx.strokeStyle = hullMid;
     ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
 
-    ctx.beginPath();                       /* prow, facing right */
+    ctx.beginPath();                        /* prow */
     ctx.moveTo(40, -4);
     ctx.quadraticCurveTo(58, -10, 55, -30);
     ctx.stroke();
-    ctx.beginPath();                       /* the little head */
+    ctx.beginPath();
     ctx.moveTo(55, -30);
     ctx.quadraticCurveTo(49, -36, 42, -32);
     ctx.stroke();
-    ctx.beginPath();                       /* and its eye */
+    ctx.beginPath();
     ctx.arc(51, -31, 1.6, 0, Math.PI * 2);
     ctx.fillStyle = '#f2ece0';
     ctx.fill();
 
-    ctx.beginPath();                       /* stern, facing left */
+    ctx.beginPath();                        /* stern */
     ctx.moveTo(-40, -4);
     ctx.quadraticCurveTo(-56, -9, -52, -25);
+    ctx.strokeStyle = hullMid;
     ctx.stroke();
 
-    /* hull */
-    ctx.beginPath();
+    ctx.beginPath();                        /* hull */
     ctx.moveTo(-44, -6);
     ctx.lineTo(44, -6);
     ctx.quadraticCurveTo(0, 22, -44, -6);
@@ -110,14 +203,6 @@
     ctx.fillStyle = hullMid;
     ctx.fill();
 
-    ctx.beginPath();                       /* waterline shadow */
-    ctx.moveTo(-36, 6);
-    ctx.quadraticCurveTo(0, 20, 36, 6);
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = hullDark;
-    ctx.stroke();
-
-    /* gunwale */
     ctx.beginPath();
     ctx.moveTo(-44, -6);
     ctx.lineTo(44, -6);
@@ -125,8 +210,7 @@
     ctx.strokeStyle = hullDark;
     ctx.stroke();
 
-    /* shields along the side */
-    for (var i = 0; i < 7; i++) {
+    for (var i = 0; i < 7; i++) {           /* shields */
       ctx.beginPath();
       ctx.arc(-30 + i * 10, -5, 4.2, 0, Math.PI * 2);
       ctx.fillStyle = i % 2 ? '#e8e3d6' : '#c0392b';
@@ -136,24 +220,20 @@
       ctx.stroke();
     }
 
-    /* mast */
-    ctx.beginPath();
+    ctx.beginPath();                        /* mast */
     ctx.moveTo(0, -8);
     ctx.lineTo(0, -56);
     ctx.lineWidth = 4;
     ctx.strokeStyle = hullMid;
     ctx.stroke();
 
-    /* the yard the sail hangs from */
-    ctx.beginPath();
+    ctx.beginPath();                        /* yard */
     ctx.moveTo(-23, -50);
     ctx.lineTo(23, -50);
     ctx.lineWidth = 3;
-    ctx.strokeStyle = hullMid;
     ctx.stroke();
 
-    /* square sail, bellied out by the wind */
-    var bill = 5 + wind * 4.5 + gust * 6;
+    var bill = 5 + wind * 4.5 + gust * 6;   /* the sail bellies with the wind */
     ctx.beginPath();
     ctx.moveTo(-21, -50);
     ctx.lineTo(21, -50);
@@ -164,7 +244,7 @@
     ctx.fillStyle = '#f2ece0';
     ctx.fill();
 
-    ctx.save();                            /* red bands across the sail */
+    ctx.save();
     ctx.clip();
     ctx.fillStyle = '#c0392b';
     ctx.fillRect(-30, -45, 70, 7);
@@ -172,19 +252,7 @@
     ctx.fillRect(-30, -19, 70, 6);
     ctx.restore();
 
-    ctx.beginPath();                       /* sail edge */
-    ctx.moveTo(-21, -50);
-    ctx.lineTo(21, -50);
-    ctx.quadraticCurveTo(21 + bill, -32, 21, -14);
-    ctx.quadraticCurveTo(0, -8, -21, -14);
-    ctx.quadraticCurveTo(-21 + bill, -32, -21, -50);
-    ctx.closePath();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(80,50,30,0.5)';
-    ctx.stroke();
-
-    /* rigging from the yard tips down to the hull */
-    ctx.beginPath();
+    ctx.beginPath();                        /* rigging */
     ctx.moveTo(-23, -50); ctx.lineTo(-38, -7);
     ctx.moveTo(23, -50);  ctx.lineTo(38, -7);
     ctx.lineWidth = 1.2;
@@ -194,27 +262,33 @@
     ctx.restore();
   }
 
-  /* ---------- interaction ---------- */
-  stage.addEventListener('pointerenter', function () { windTarget = 2.1; });
+  /* ---- interaction ---- */
+  stage.addEventListener('pointerenter', function () { windTarget = 2.2; });
   stage.addEventListener('pointerleave', function () { windTarget = 1; });
+
+  /* dragging a finger or cursor across the water drags the surface with it */
+  stage.addEventListener('pointermove', function (e) {
+    var r = stage.getBoundingClientRect();
+    var x = e.clientX - r.left;
+    var y = e.clientY - r.top;
+    if (y > surfaceAt(x) - 6) { disturb(x, 0.9, 14); }
+  });
 
   stage.addEventListener('click', function (e) {
     var r = stage.getBoundingClientRect();
     var x = e.clientX - r.left;
     var y = e.clientY - r.top;
 
-    gust = 1.6;
-    rings.push({ x: x, y: Math.max(y, horizon()), r: 4, life: 1 });
+    gust = 1.4;
+    disturb(x, 13, 26);                     /* a real splash: the ripple spreads */
 
-    for (var i = 0; i < 22; i++) {
-      var a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
-      var sp = 70 + Math.random() * 150;
-      splashes.push({
-        x: x, y: y,
-        vx: Math.cos(a) * sp,
-        vy: Math.sin(a) * sp,
-        life: 1,
-        r: 1.5 + Math.random() * 2.5
+    for (var i = 0; i < 20; i++) {          /* droplets thrown up by it */
+      var a = -Math.PI / 2 + (Math.random() - 0.5) * 2.0;
+      var sp = 60 + Math.random() * 150;
+      drops.push({
+        x: x, y: Math.min(y, surfaceAt(x)),
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
+        r: 1.3 + Math.random() * 2.3
       });
     }
 
@@ -222,102 +296,80 @@
     next++;
   });
 
-  /* ---------- the frame ---------- */
+  /* ---- frame ---- */
   var last = performance.now();
 
   function frame(now) {
     var dt = Math.min((now - last) / 1000, 0.05);
     last = now;
-    if (!calm) { t += dt; }
+    t += dt;
 
     wind += (windTarget - wind) * Math.min(dt * 2.5, 1);
-    gust *= Math.pow(0.12, dt);
+    gust *= Math.pow(0.15, dt);
     if (gust < 0.01) { gust = 0; }
-    var w = wind + gust;
+
+    /* fixed-step the sim so it behaves the same on any refresh rate */
+    acc += calm ? 0 : dt;
+    var steps = 0;
+    while (acc >= STEP && steps < 4) { simulate(); acc -= STEP; steps++; }
 
     /* sky */
-    var sky = ctx.createLinearGradient(0, 0, 0, horizon());
+    var sky = ctx.createLinearGradient(0, 0, 0, rest);
     sky.addColorStop(0, '#04203f');
-    sky.addColorStop(0.6, '#0b3b6b');
-    sky.addColorStop(1, '#1f6ba8');
+    sky.addColorStop(0.65, '#0b3b6b');
+    sky.addColorStop(1, '#2176b0');
     ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, W, horizon() + 2);
+    ctx.fillRect(0, 0, W, H);
 
-    /* stars */
-    for (var s = 0; s < stars.length; s++) {
-      var st = stars[s];
-      var a = 0.35 + 0.35 * Math.sin(t * 1.5 + st.tw);
-      ctx.globalAlpha = a;
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(st.x, st.y, st.r, 0, Math.PI * 2);
-      ctx.fill();
+    /* two parallax copies of the same surface, then the surface itself */
+    waterShape(-H * 0.055, 0.45);
+    ctx.fillStyle = '#17589180';
+    ctx.fill();
+    crestLine(-H * 0.055, 0.45, 0.16);
+
+    waterShape(-H * 0.022, 0.72);
+    ctx.fillStyle = '#0e3f70';
+    ctx.fill();
+    crestLine(-H * 0.022, 0.72, 0.22);
+
+    drawShip();
+
+    waterShape(0, 1);
+    ctx.fillStyle = '#092b4f';
+    ctx.fill();
+    crestLine(0, 1, 0.34);
+
+    /* foam where the water is moving fastest */
+    for (var i = 0; i < N; i++) {
+      var speed = Math.abs(v[i]);
+      if (speed > 0.55) {
+        ctx.globalAlpha = Math.min((speed - 0.55) * 0.6, 0.7);
+        ctx.fillStyle = '#eaf4ff';
+        ctx.beginPath();
+        ctx.arc(i * SPACING, h[i], 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
     ctx.globalAlpha = 1;
 
-    /* three bands of water, far to near */
-    var colors = ['#15548c', '#0e3f70', '#092b4f'];
-    for (var L = 0; L < 3; L++) {
-      waterPath(L);
-      ctx.fillStyle = colors[L];
-      ctx.fill();
-
-      /* a pale crest line on top of each band */
-      ctx.beginPath();
-      ctx.moveTo(0, waveAt(0, L));
-      for (var x = 0; x <= W; x += 6) { ctx.lineTo(x, waveAt(x, L)); }
-      ctx.lineWidth = 1.6;
-      ctx.strokeStyle = 'rgba(255,255,255,' + (0.30 - L * 0.07) + ')';
-      ctx.stroke();
-
-      /* the ship rides between the middle and the near band */
-      if (L === 1) { drawShipOnWave(); }
-    }
-
-    /* click ripples */
-    for (var i = rings.length - 1; i >= 0; i--) {
-      var ring = rings[i];
-      ring.r += dt * 150;
-      ring.life -= dt * 1.3;
-      if (ring.life <= 0) { rings.splice(i, 1); continue; }
-      ctx.beginPath();
-      ctx.ellipse(ring.x, ring.y, ring.r, ring.r * 0.28, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(255,255,255,' + (ring.life * 0.5) + ')';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
-    /* splash droplets */
-    for (var j = splashes.length - 1; j >= 0; j--) {
-      var p = splashes[j];
-      p.vy += 420 * dt;
+    /* droplets fall back in and disturb the surface where they land */
+    for (var j = drops.length - 1; j >= 0; j--) {
+      var p = drops[j];
+      p.vy += 430 * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.life -= dt * 0.9;
-      if (p.life <= 0) { splashes.splice(j, 1); continue; }
-      ctx.globalAlpha = Math.max(p.life, 0);
+      if (p.y >= surfaceAt(p.x) || p.x < -10 || p.x > W + 10) {
+        if (p.x > 0 && p.x < W) { disturb(p.x, 0.7, 6); }
+        drops.splice(j, 1);
+        continue;
+      }
       ctx.fillStyle = '#eaf4ff';
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
       ctx.fill();
     }
-    ctx.globalAlpha = 1;
 
     requestAnimationFrame(frame);
-  }
-
-  function drawShipOnWave() {
-    /* the ship drifts slowly across and sits on the middle swell */
-    var driftX = W * 0.5 + Math.sin(t * 0.22) * W * 0.17;
-    var y = waveAt(driftX, 1);
-    var slope = (waveAt(driftX + 14, 1) - waveAt(driftX - 14, 1)) / 28;
-    var scale = Math.max(0.32, Math.min(H / 250, W / 460, 0.95));
-
-    ctx.save();
-    ctx.translate(driftX, y + 2);
-    ctx.rotate(Math.atan(slope) * 0.9);
-    drawShip(scale);
-    ctx.restore();
   }
 
   requestAnimationFrame(frame);
