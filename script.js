@@ -1,90 +1,88 @@
 (function () {
-  var banner = document.getElementById('banner');
-  var headline = document.getElementById('headline');
-  var glow = document.getElementById('glow');
-  var sub = document.getElementById('sub');
-  var sparks = document.getElementById('sparks');
+  var stage = document.getElementById('stage');
   var flag = document.getElementById('flag');
+  var glow = document.getElementById('glow');
+  var sparks = document.getElementById('sparks');
 
   var TITLE = 'Welcome to BYU–Idaho';
-  var FLAG_TEXT = 'BYU–I';
-  var STRIPS = 22;
+  var STRIPS = 44;                     /* more strips = smoother cloth */
 
   var messages = [
     'Welcome home!',
     'Rexburg strong ❄︎',
     'You belong here',
     'Have a great semester',
-    'Hover the words · tap for a surprise'
+    'Hover me · tap for a surprise'
   ];
   var next = 0;
 
-  /* ---- the flag: one picture sliced into vertical strips ---- */
-  for (var s = 0; s < STRIPS; s++) {
+  /* ---- cut the banner into strips; each one carries the whole face ---- */
+  for (var i = 0; i < STRIPS; i++) {
     var strip = document.createElement('div');
     strip.className = 'strip';
-    strip.style.setProperty('--i', s);
-    /* the free end of the flag swings more than the end on the pole */
-    strip.style.setProperty('--amp', (s / (STRIPS - 1)).toFixed(3));
+    strip.style.setProperty('--i', i);
+    /* the end away from the pole swings the most */
+    strip.style.setProperty('--amp', (i / (STRIPS - 1)).toFixed(3));
 
     var face = document.createElement('div');
     face.className = 'face';
-    face.style.setProperty('--i', s);
+    face.style.setProperty('--i', i);
     face.style.setProperty('--n', STRIPS);
 
-    var label = document.createElement('span');
-    label.textContent = FLAG_TEXT;
-    face.appendChild(label);
+    var inner = document.createElement('div');
 
+    var h = document.createElement('h1');
+    h.className = 'headline';
+    h.textContent = TITLE;
+
+    var p = document.createElement('p');
+    p.className = 'sub';
+    p.textContent = messages[messages.length - 1];
+
+    inner.appendChild(h);
+    inner.appendChild(p);
+    face.appendChild(inner);
     strip.appendChild(face);
     flag.appendChild(strip);
   }
 
-  /* ---- the headline: one hoverable, waving letter at a time ---- */
-  TITLE.split('').forEach(function (ch, i) {
-    var span = document.createElement('span');
-    span.className = 'ltr' + (ch === ' ' ? ' space' : '');
-    var inner = document.createElement('b');
-    if (ch === ' ') { inner.innerHTML = '&nbsp;'; } else { inner.textContent = ch; }
-    span.appendChild(inner);
-    span.style.setProperty('--i', i);
-    headline.appendChild(span);
-  });
+  var subs = flag.querySelectorAll('.sub');
 
   /* ---- pointer-following glow ---- */
-  banner.addEventListener('pointermove', function (e) {
-    var r = banner.getBoundingClientRect();
+  stage.addEventListener('pointermove', function (e) {
+    var r = stage.getBoundingClientRect();
     glow.style.setProperty('--mx', ((e.clientX - r.left) / r.width) * 100 + '%');
     glow.style.setProperty('--my', ((e.clientY - r.top) / r.height) * 100 + '%');
   });
 
-  /* ---- click: confetti, a gust through the flag, a new message ---- */
-  banner.addEventListener('click', function (e) {
-    var r = banner.getBoundingClientRect();
+  /* ---- click: confetti, a gust through the cloth, a new message ---- */
+  stage.addEventListener('click', function (e) {
+    var r = stage.getBoundingClientRect();
     var x = e.clientX - r.left;
     var y = e.clientY - r.top;
     var colors = ['#4aa8ff', '#ffffff', '#8fd3ff', '#ffd166'];
 
-    for (var i = 0; i < 16; i++) {
+    for (var k = 0; k < 18; k++) {
       var d = document.createElement('i');
-      var a = (Math.PI * 2 * i) / 16;
-      var dist = 40 + Math.random() * 70;
+      var a = (Math.PI * 2 * k) / 18;
+      var dist = 45 + Math.random() * 75;
       d.className = 'spark';
       d.style.left = x + 'px';
       d.style.top = y + 'px';
-      d.style.background = colors[i % colors.length];
+      d.style.background = colors[k % colors.length];
       d.style.setProperty('--dx', Math.cos(a) * dist + 'px');
       d.style.setProperty('--dy', Math.sin(a) * dist + 'px');
       sparks.appendChild(d);
       setTimeout(function (el) { return function () { el.remove(); }; }(d), 800);
     }
 
-    sub.textContent = messages[next % messages.length];
+    var msg = messages[next % messages.length];
     next++;
+    for (var s = 0; s < subs.length; s++) { subs[s].textContent = msg; }
 
-    banner.classList.remove('cheer');
-    void banner.offsetWidth;
-    banner.classList.add('cheer');
-    setTimeout(function () { banner.classList.remove('cheer'); }, 1600);
+    stage.classList.remove('cheer');
+    void stage.offsetWidth;
+    stage.classList.add('cheer');
+    setTimeout(function () { stage.classList.remove('cheer'); }, 1800);
   });
 })();
