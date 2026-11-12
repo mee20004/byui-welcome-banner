@@ -91,6 +91,10 @@
     ctx.moveTo(55, -30);
     ctx.quadraticCurveTo(49, -36, 42, -32);
     ctx.stroke();
+    ctx.beginPath();                       /* and its eye */
+    ctx.arc(51, -31, 1.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#f2ece0';
+    ctx.fill();
 
     ctx.beginPath();                       /* stern, facing left */
     ctx.moveTo(-40, -4);
@@ -135,28 +139,57 @@
     /* mast */
     ctx.beginPath();
     ctx.moveTo(0, -8);
-    ctx.lineTo(0, -52);
+    ctx.lineTo(0, -56);
     ctx.lineWidth = 4;
     ctx.strokeStyle = hullMid;
     ctx.stroke();
 
-    /* sail, billowing with the wind */
-    var bill = 20 + wind * 9 + gust * 10;
+    /* the yard the sail hangs from */
     ctx.beginPath();
-    ctx.moveTo(-2, -50);
-    ctx.quadraticCurveTo(bill, -32, -2, -12);
-    ctx.quadraticCurveTo(-10, -31, -2, -50);
+    ctx.moveTo(-23, -50);
+    ctx.lineTo(23, -50);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = hullMid;
+    ctx.stroke();
+
+    /* square sail, bellied out by the wind */
+    var bill = 5 + wind * 4.5 + gust * 6;
+    ctx.beginPath();
+    ctx.moveTo(-21, -50);
+    ctx.lineTo(21, -50);
+    ctx.quadraticCurveTo(21 + bill, -32, 21, -14);
+    ctx.quadraticCurveTo(0, -8, -21, -14);
+    ctx.quadraticCurveTo(-21 + bill, -32, -21, -50);
     ctx.closePath();
     ctx.fillStyle = '#f2ece0';
     ctx.fill();
 
-    ctx.save();                            /* red stripes inside the sail */
+    ctx.save();                            /* red bands across the sail */
     ctx.clip();
     ctx.fillStyle = '#c0392b';
-    ctx.fillRect(-14, -45, 40, 6);
-    ctx.fillRect(-14, -30, 40, 6);
-    ctx.fillRect(-14, -19, 40, 5);
+    ctx.fillRect(-30, -45, 70, 7);
+    ctx.fillRect(-30, -31, 70, 7);
+    ctx.fillRect(-30, -19, 70, 6);
     ctx.restore();
+
+    ctx.beginPath();                       /* sail edge */
+    ctx.moveTo(-21, -50);
+    ctx.lineTo(21, -50);
+    ctx.quadraticCurveTo(21 + bill, -32, 21, -14);
+    ctx.quadraticCurveTo(0, -8, -21, -14);
+    ctx.quadraticCurveTo(-21 + bill, -32, -21, -50);
+    ctx.closePath();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(80,50,30,0.5)';
+    ctx.stroke();
+
+    /* rigging from the yard tips down to the hull */
+    ctx.beginPath();
+    ctx.moveTo(-23, -50); ctx.lineTo(-38, -7);
+    ctx.moveTo(23, -50);  ctx.lineTo(38, -7);
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = 'rgba(240,235,225,0.55)';
+    ctx.stroke();
 
     ctx.restore();
   }
@@ -278,7 +311,7 @@
     var driftX = W * 0.5 + Math.sin(t * 0.22) * W * 0.17;
     var y = waveAt(driftX, 1);
     var slope = (waveAt(driftX + 14, 1) - waveAt(driftX - 14, 1)) / 28;
-    var scale = Math.max(0.3, Math.min(H / 300, W / 520, 0.85));
+    var scale = Math.max(0.32, Math.min(H / 250, W / 460, 0.95));
 
     ctx.save();
     ctx.translate(driftX, y + 2);
