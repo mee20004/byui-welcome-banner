@@ -148,7 +148,7 @@
     ship.y += ship.vy;
 
     /* and shoves the water under the hull as she moves: her own wake */
-    disturb(ship.x, ship.vy * 0.22, ship.half * 0.9);
+    disturb(ship.x, ship.vy * 0.10, ship.half * 0.75);
   }
 
   /* ---- drawing ---- */
@@ -357,8 +357,8 @@
     /* foam where the water is moving fastest */
     for (var i = 0; i < N; i++) {
       var speed = Math.abs(v[i]);
-      if (speed > 1.15 && i % 3 === 0) {
-        ctx.globalAlpha = Math.min((speed - 1.15) * 0.35, 0.6);
+      if (speed > 1.6 && i % 5 === 0) {
+        ctx.globalAlpha = Math.min((speed - 1.6) * 0.3, 0.45);
         ctx.fillStyle = '#eaf4ff';
         ctx.beginPath();
         ctx.arc(i * SPACING, h[i] - 1, 1.3, 0, Math.PI * 2);
