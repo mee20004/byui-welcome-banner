@@ -4,6 +4,7 @@
   --blue: #0062b8;
   --sky: #4aa8ff;
   --ink: #ffffff;
+  --edge: #ffffff;        /* the white edge color */
 }
 
 * { box-sizing: border-box; }
@@ -11,8 +12,8 @@
 html, body {
   margin: 0;
   height: 100%;
-  overflow: hidden;              /* no scrolling, ever */
-  background: var(--navy-deep);
+  overflow: hidden;                 /* no scrolling, ever */
+  background: var(--edge);
   font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
 }
 
@@ -23,7 +24,6 @@ html, body {
   width: 100%;
   display: grid;
   place-items: center;
-  text-align: center;
   padding: 4% 5%;
   cursor: pointer;
   user-select: none;
@@ -38,6 +38,18 @@ html, body {
   50%      { background-position: 100% 50%; }
 }
 
+/* white feathered edges so the banner melts into a white Pathify card */
+.edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  box-shadow:
+    inset 0 0 0 3px var(--edge),
+    inset 0 0 14px 7px rgba(255, 255, 255, 0.85),
+    inset 0 0 34px 14px rgba(255, 255, 255, 0.35);
+}
+
 /* soft light that follows the pointer */
 .glow {
   position: absolute;
@@ -50,11 +62,98 @@ html, body {
 }
 .banner:hover .glow { opacity: 1; }
 
-.stack { position: relative; z-index: 2; }
+/* ---------- layout: flag on the left, words on the right ---------- */
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(0.5rem, 3vw, 1.4rem);
+  width: 100%;
+}
+.stack { text-align: left; }
 
+/* ---------- the flag ---------- */
+.flagwrap {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: stretch;
+  height: clamp(44px, 17vw, 92px);
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
+}
+.pole {
+  width: clamp(3px, 0.8vw, 5px);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #ffffff, #c9d6e4);
+  margin-right: 2px;
+}
+.pole::before {                      /* finial */
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -2px;
+  width: clamp(7px, 1.6vw, 10px);
+  height: clamp(7px, 1.6vw, 10px);
+  border-radius: 50%;
+  background: #ffffff;
+}
+.flag {
+  position: relative;
+  height: 100%;
+  width: clamp(66px, 26vw, 138px);
+  display: flex;
+  overflow: visible;
+}
+
+/* the flag is sliced into vertical strips; each strip rides the wave
+   a beat behind the one before it, which reads as cloth */
+.flag .strip {
+  position: relative;
+  height: 100%;
+  flex: 1 1 0;
+  overflow: hidden;
+  animation: cloth 2s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -90ms);
+  will-change: transform;
+}
+@keyframes cloth {
+  0%, 100% { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);    filter: brightness(1); }
+  25%      { transform: translateY(calc(var(--amp) * -14%)) scaleY(1.05); filter: brightness(1.25); }
+  50%      { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);    filter: brightness(1); }
+  75%      { transform: translateY(calc(var(--amp) * 14%))  scaleY(0.95); filter: brightness(0.78); }
+}
+
+/* each strip holds a full copy of the flag face, slid sideways,
+   so the slices line up into one picture */
+.flag .face {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: calc(var(--n) * 100%);
+  left: calc(var(--i) * -100%);
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #003f7d, #001b38);
+  border-top: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+}
+.flag .face span {
+  font-weight: 900;
+  font-size: clamp(0.6rem, 2.6vw, 1.15rem);
+  letter-spacing: 0.04em;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.banner:hover .flag .strip { animation-duration: 1.1s; }
+.banner.cheer .flag .strip { animation-duration: 0.55s; }
+
+/* ---------- the words ---------- */
 .headline {
   margin: 0;
-  font-size: clamp(1.25rem, 7vw, 3.25rem);
+  font-size: clamp(1rem, 5.4vw, 2.6rem);
   line-height: 1.05;
   font-weight: 800;
   letter-spacing: 0.01em;
@@ -78,31 +177,28 @@ html, body {
   transform: translateY(-0.22em) rotate(-8deg) scale(1.22);
   color: var(--sky);
 }
-.headline .space { width: 0.32em; }
+.headline .space { width: 0.3em; }
 
-/* the resting wave */
 @keyframes wave {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   25%      { transform: translateY(-0.34em) rotate(-6deg); }
   50%      { transform: translateY(0) rotate(0deg); }
   75%      { transform: translateY(0.26em) rotate(6deg); }
 }
-
-/* hovering the banner speeds the wave up and deepens it */
 .banner:hover .headline .ltr { animation-duration: 1.2s; }
 
 .sub {
-  margin: 0.7em 0 0;
-  font-size: clamp(0.65rem, 2.4vw, 0.95rem);
+  margin: 0.55em 0 0;
+  font-size: clamp(0.55rem, 2.1vw, 0.9rem);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.72);
-  transition: color 0.3s ease, opacity 0.3s ease;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.3s ease;
 }
 .banner:hover .sub { color: #fff; }
 
-/* click burst */
-.sparks { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+/* ---------- click burst ---------- */
+.sparks { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
 .spark {
   position: absolute;
   width: 8px;
@@ -116,7 +212,6 @@ html, body {
   to   { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
 }
 
-/* click: one big ripple rolls through the letters, then the resting wave resumes */
 .banner.cheer .headline .ltr {
   animation: bigwave 900ms cubic-bezier(.34,1.3,.64,1);
   animation-delay: calc(var(--i) * 45ms);
@@ -128,6 +223,11 @@ html, body {
   100% { transform: translateY(0) rotate(0deg) scale(1); }
 }
 
+/* very short containers: drop the sub-line rather than scroll */
+@media (max-height: 110px) {
+  .sub { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .banner, .headline .ltr, .spark { animation: none !important; }
+  .banner, .headline .ltr, .flag .strip, .spark { animation: none !important; }
 }
