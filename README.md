@@ -1,12 +1,15 @@
 # BYU-Idaho Welcome Banner
 
 A tiny, dependency-free welcome banner built to be embedded in a Pathify iframe card.
+The whole banner is a flag: the surface is sliced into vertical strips, each one a beat
+behind the one before it, so the cloth (and the text printed on it) ripples.
 
 - Fills 100% of whatever container it is given; never scrolls.
-- Animated flowing gradient background in BYU-Idaho navy/blue.
-- Hover: a light follows the pointer and individual letters lift and tilt.
-- Click/tap: a confetti burst plus a rotating message under the headline.
-- Text scales with `clamp()`, so it stays readable in small dynamic containers.
+- White above and below, so the cloth silhouette waves against the white Pathify card.
+- Animated flowing gradient in BYU-Idaho navy/blue, continuous across the strips.
+- Hover: the wave speeds up and a soft light follows the pointer.
+- Click/tap: a gust rips through the cloth, confetti bursts, and the sub-line swaps message.
+- Text scales with `clamp()`; the sub-line drops out under 120px tall.
 - Respects `prefers-reduced-motion`.
 
 ## Embed
@@ -22,5 +25,10 @@ A tiny, dependency-free welcome banner built to be embedded in a Pathify iframe 
 
 ## Customizing
 
-Colors live in the `:root` block of `style.css`. The headline text and the
-rotating click messages live at the top of `script.js`.
+- Colors: the `:root` block in `style.css`.
+- Headline text, click messages, strip count: the top of `script.js`.
+- Wave size and speed: the `cloth` keyframes and `.strip` animation in `style.css`.
+
+**After editing**, bump the `?v=` number on the `style.css` and `script.js` links in
+`index.html`. Browsers cache those files hard inside an iframe, and without the bump
+students keep seeing the old version.
