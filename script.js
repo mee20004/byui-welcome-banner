@@ -66,6 +66,10 @@
     ship.half = 44 * ship.scale;
     ship.x = W * 0.5;
     ship.y = rest;
+
+    /* run the sim forward before the first frame, so the card opens on a
+       sea that is already moving instead of a dead flat one */
+    for (var p = 0; p < 900; p++) { t += STEP; simulate(); }
   }
   if (window.ResizeObserver) { new ResizeObserver(resize).observe(stage); }
   window.addEventListener('resize', resize);
@@ -118,12 +122,12 @@
 
     /* wind: a long swell fed in from the left, plus scattered chop */
     var w = wind + gust;
-    v[0] += Math.sin(t * 0.9) * 0.40 * w;             /* swell rolling in */
-    v[1] += Math.sin(t * 0.9) * 0.28 * w;
+    v[0] += Math.sin(t * 0.9) * 0.52 * w;             /* swell rolling in */
+    v[1] += Math.sin(t * 0.9) * 0.36 * w;
     v[N - 1] += Math.sin(t * 1.43 + 1.2) * 0.26 * w;  /* and a cross swell */
     v[N - 2] += Math.sin(t * 1.43 + 1.2) * 0.18 * w;
     if (Math.random() < 0.6 * w) {                    /* wind chop */
-      disturb(Math.random() * W, (Math.random() - 0.5) * 2.6 * w, 12);
+      disturb(Math.random() * W, (Math.random() - 0.5) * 3.2 * w, 12);
     }
 
     /* keep the sea in its bed: cap how far a column can stray from rest
