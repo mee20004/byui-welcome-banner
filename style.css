@@ -28,6 +28,7 @@ html, body {
   cursor: pointer;
   user-select: none;
   overflow: hidden;
+  border-radius: 12px;
   background: linear-gradient(115deg, var(--navy-deep), var(--navy) 35%, var(--blue) 65%, var(--navy) 100%);
   background-size: 300% 300%;
   animation: flow 14s ease-in-out infinite;
@@ -44,10 +45,11 @@ html, body {
   inset: 0;
   pointer-events: none;
   z-index: 4;
+  border-radius: inherit;
   box-shadow:
-    inset 0 0 0 3px var(--edge),
-    inset 0 0 14px 7px rgba(255, 255, 255, 0.85),
-    inset 0 0 34px 14px rgba(255, 255, 255, 0.35);
+    inset 0 0 0 4px var(--edge),
+    inset 0 0 9px 4px rgba(255, 255, 255, 0.95),
+    inset 0 0 20px 7px rgba(255, 255, 255, 0.30);
 }
 
 /* soft light that follows the pointer */
@@ -114,6 +116,7 @@ html, body {
   height: 100%;
   flex: 1 1 0;
   overflow: hidden;
+  margin-right: -0.5px;              /* overlap so no hairline seams show */
   animation: cloth 2s ease-in-out infinite;
   animation-delay: calc(var(--i) * -90ms);
   will-change: transform;
@@ -154,7 +157,7 @@ html, body {
 .headline {
   margin: 0;
   font-size: clamp(1rem, 5.4vw, 2.6rem);
-  line-height: 1.05;
+  line-height: 1.38;
   font-weight: 800;
   letter-spacing: 0.01em;
   color: var(--ink);
