@@ -53,9 +53,9 @@ html, body {
 /* the swing grows toward the free end, like cloth on a pole */
 @keyframes cloth {
   0%, 100% { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);     filter: brightness(1); }
-  25%      { transform: translateY(calc(var(--amp) * -11%)) scaleY(1.045); filter: brightness(1.22); }
+  25%      { transform: translateY(calc(var(--amp) * -15%)) scaleY(1.05);  filter: brightness(1.09); }
   50%      { transform: translateY(calc(var(--amp) * 0%))   scaleY(1);     filter: brightness(1); }
-  75%      { transform: translateY(calc(var(--amp) * 11%))  scaleY(0.955); filter: brightness(0.76); }
+  75%      { transform: translateY(calc(var(--amp) * 15%))  scaleY(0.95);  filter: brightness(0.91); }
 }
 
 /* every strip holds a full copy of the banner face, slid sideways,

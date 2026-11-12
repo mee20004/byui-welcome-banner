@@ -22,7 +22,7 @@
     strip.className = 'strip';
     strip.style.setProperty('--i', i);
     /* the end away from the pole swings the most */
-    strip.style.setProperty('--amp', (i / (STRIPS - 1)).toFixed(3));
+    strip.style.setProperty('--amp', (0.3 + 0.7 * (i / (STRIPS - 1))).toFixed(3));
 
     var face = document.createElement('div');
     face.className = 'face';
