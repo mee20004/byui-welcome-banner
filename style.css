@@ -1,0 +1,111 @@
+:root {
+  --navy: #002e5d;
+  --navy-deep: #001b38;
+  --blue: #0062b8;
+  --sky: #4aa8ff;
+  --ink: #ffffff;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;              /* no scrolling, ever */
+  background: var(--navy-deep);
+  font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+}
+
+/* Fills whatever container the iframe is given */
+.banner {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 4% 5%;
+  cursor: pointer;
+  user-select: none;
+  overflow: hidden;
+  background: linear-gradient(115deg, var(--navy-deep), var(--navy) 35%, var(--blue) 65%, var(--navy) 100%);
+  background-size: 300% 300%;
+  animation: flow 14s ease-in-out infinite;
+}
+
+@keyframes flow {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+
+/* soft light that follows the pointer */
+.glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(220px circle at var(--mx, 50%) var(--my, 50%),
+              rgba(255, 255, 255, 0.18), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.banner:hover .glow { opacity: 1; }
+
+.stack { position: relative; z-index: 2; }
+
+.headline {
+  margin: 0;
+  font-size: clamp(1.25rem, 7vw, 3.25rem);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+/* each letter is its own span so hover can play with it */
+.headline span {
+  display: inline-block;
+  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), color 0.25s ease;
+}
+.headline span:hover {
+  transform: translateY(-0.18em) rotate(-6deg) scale(1.15);
+  color: var(--sky);
+}
+.headline .space { width: 0.32em; }
+
+.sub {
+  margin: 0.7em 0 0;
+  font-size: clamp(0.65rem, 2.4vw, 0.95rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+.banner:hover .sub { color: #fff; }
+
+/* click burst */
+.sparks { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.spark {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sky);
+  animation: pop 750ms ease-out forwards;
+}
+@keyframes pop {
+  from { transform: translate(0, 0) scale(1); opacity: 1; }
+  to   { transform: translate(var(--dx), var(--dy)) scale(0.2); opacity: 0; }
+}
+
+.banner.cheer .headline span {
+  animation: wave 650ms ease-in-out;
+  animation-delay: calc(var(--i) * 35ms);
+}
+@keyframes wave {
+  50% { transform: translateY(-0.35em) scale(1.12); color: var(--sky); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner, .headline span, .spark { animation: none !important; }
+}
